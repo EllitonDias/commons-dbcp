@@ -69,9 +69,11 @@ public class TestKeyedCPDSConnectionFactory {
             // Checkout a pair of connections
             final PooledConnection pcon1 = pool.borrowObject(key).getPooledConnection();
             try (final Connection con1 = pcon1.getConnection()) {
+                int numActivityExpected = 2;
+                int numIdleExpected = 0;
                 final PooledConnection pcon2 = pool.borrowObject(key).getPooledConnection();
-                assertEquals(2, pool.getNumActive(key));
-                assertEquals(0, pool.getNumIdle(key));
+                assertEquals(numActivityExpected, pool.getNumActive(key));
+                assertEquals(numIdleExpected, pool.getNumIdle(key));
 
                 // Verify listening
                 final PooledConnectionProxy pc = (PooledConnectionProxy) pcon1;
@@ -81,13 +83,14 @@ public class TestKeyedCPDSConnectionFactory {
                 pc.throwConnectionError();
 
                 // Active count should be reduced by 1 and no idle increase
-                assertEquals(1, pool.getNumActive(key));
-                assertEquals(0, pool.getNumIdle(key));
+                int numActiveReducedByidleExpected = 1;
+                assertEquals(numActiveReducedByidleExpected, pool.getNumActive(key));
+                assertEquals(numIdleExpected, pool.getNumIdle(key));
 
                 // Throw another one - we should be on cleanup list, so ignored
                 pc.throwConnectionError();
-                assertEquals(1, pool.getNumActive(key));
-                assertEquals(0, pool.getNumIdle(key));
+                assertEquals(numActiveReducedByidleExpected, pool.getNumActive(key));
+                assertEquals(numIdleExpected, pool.getNumIdle(key));
 
                 // Ask for another connection - should trigger makeObject, which causes
                 // cleanup, removing listeners.
